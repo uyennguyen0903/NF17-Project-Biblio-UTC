@@ -1,0 +1,55 @@
+Ressources (#code:varchar, titre:varchar, annee_publication:integer, editeur:varchar, genre:varchar, code_classification:varchar) AVEC titre et code_classification NOT NULL
+Condition : (annee_publication <= 2020)
+
+Oeuvre_musicale (#code=>Ressources, duree:integer)
+Livre (#code=>Ressources, ISBN:varchar, resume:varchar, longueur:integer) AVEC ISBN UNIQUE NOT NULL
+Film(#code=>Ressources, duree:integer, synopsis:varchar) 
+
+Contributeur(#id:varchar, nom:varchar, prenom:varchar, nationalite:varchar, date_naissance:date, interprete:bool, compositeur:bool, auteur:bool, realisateur:bool, acteur:bool) AVEC nom, prenom NOT NULL 
+Contrainte liee a l'heritage : (interprete=VRAI OU compositeur=VRAI OU auteur=VRAI OU realisateur=VRAI OU acteur=VRAI)
+
+Interpreter(#interprete_id=>Contributeur, #oeuvre_musicale=>Oeuvre_musicale)
+Composer(#compositeur_id=>Contributeur, #oeuvre_musicale=>Oeuvre_musicale)
+Ecrire(#auteur_id=>Contributeur, #livre=>Livre)
+Realiser(#realisateur_id=>Contributeur, #film=>Film)
+Jouer(#acteur_id=>Contributeur, #film=>Film)
+
+Exemplaire(#ressources_code=>Ressources, #id:varchar, etat:{neuf|bon|abime|perdu}) AVEC etat NOT NULL
+
+Personne(#login:varchar, mot_de_passe:varchar, prenom:varchar, nom:varchar, adresse:varchar, mail:varchar) AVEC prenom, nom, mot_de_passe NOT NULL
+Membre_biblio(#login=>Personne) 
+Adherent(#login=>Personne, code_adherent:varchar, date_de_naissance:date, num_tel:varchar, date_debut:date, date_fin:date, blacklist:bool) AVEC code_adherent UNIQUE NOT NULL, date_debut, date_naissance NOT NULL
+Conditions :
+    1. date_de_naissance < date_debut
+    2. date_fin = NULL OR date_fin >= date_debut
+
+Pret(#adherent_login=>Adherent, #exemplaire_id=>Exemplaire, date_debut:date, date_reservation:date, type:{'retard','perte_degradation','sans_sanction'} , date_retard:date, date_rembourser:date) AVEC date_debut,date_reservation NOT NULL
+Condition: (type='retard' ET date_retard NOT NULL ET date_rembourser NULL)
+           OU (type='perte_degradation' ET date_rembourser NOT NULL ET date_retard NULL)
+           OU (type='sans_sanction' ET date_retard NULL ET date_rembourser NULL)
+
+Contraintes complexes : 
+    PROJECTION(Oeuvre_musicale, code) = PROJECTION(Interpreter, oeuvre_musicale)
+    PROJECTION(Oeuvre_musicale, code) = PROJECTION(Composer, oeuvre_musicale)
+    PROJECTION(Livre, code) = PROJECTION(Ecrire, livre)    
+    PROJECTION(Film, code) = PROJECTION(Realiser, film)
+    PROJECTION(Film, code) = PROJECTION(Jouer, film)
+
+Vues:
+    1. Blacklist (liste des adhérents qui sont sanctionné plusieurs fois) :
+    R1 = Restriction(Adherent, blacklist=true)
+    R2 = Jointure(R1, Personne, R1.login=Personne.login)
+    vBlacklist = Projection(R2, prenom, login, adresse, mail)
+    
+    2. Liste des retards dans le retour :
+    R1 = Restriction(Pret, type='retard')
+    R2 = Jointure(R1, Adherent, Adherent.login=R1.adherent)
+    vSanctionRetard = Projection(R2, login, date_retard)
+    
+    3. Liste de perte ou détérioration grave de documents :
+    R1 = Restriction(Pret, type ='perte_degradation')
+    R2 = Jointure(R1, Adherent, Adherent.login=R1.adherent)
+    vSanctionPerte_Degradation = Projection(R2, login, date_rembourser)
+    
+    4. Statistique sur les documents empruntes par adherents, il s'agit de compter le nombre d'emprunts pour chaque documents
+    

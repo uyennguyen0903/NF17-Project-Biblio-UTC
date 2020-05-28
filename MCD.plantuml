@@ -1,0 +1,121 @@
+@startuml
+class Exemplaire{
+    id : varchar {local key}
+    etat : {neuf,bon,abimé,perdu}
+}
+
+abstract class Ressources{
+    code : varchar {key}
+    titre : varchar {not null}
+    annee_publication : date
+    editeur : varchar
+    genre : varchar
+    code_classification : varchar {not null}
+}
+
+class Livre{
+    ISBN : varchar {unique} {not null}
+    resume : varchar {unique}
+    longueur : int
+}
+
+class Film{
+    duree : varchar
+    synopsis : varchar {unique}
+}
+
+class  Oeuvre_musicale{
+    longueur : int
+}
+
+abstract class Contributeur{
+    id : varchar {key}
+    nom : varchar {not null}
+    prenom : varchar {not null}
+    nationalite : varchar
+    date_naissance : date
+}
+
+class Auteur{}
+
+class Acteur{}
+
+class Réalisateur{}
+
+class Interprete{}
+
+class Compositeur{}
+
+
+Exemplaire "*" --* " " Ressources
+
+Ressources " " <|-- " " Livre
+
+Ressources " " <|-- " " Film
+
+Ressources " " <|-- " " Oeuvre_musicale
+
+Livre "*"  --  "1..*" Auteur : écrire
+
+Film "*"   --  "1..*" Acteur : jouer dans
+
+Film "*"   --  "1..*" Réalisateur : réaliser
+
+Oeuvre_musicale "*" -- "1..*" Interprete  : interpreter
+
+Oeuvre_musicale "*" -- "1..*" Compositeur : composer
+
+Auteur " " --|> " " Contributeur
+
+Acteur " " --|> " " Contributeur
+
+Réalisateur " " --|> " " Contributeur
+
+Interprete " " --|> " " Contributeur
+
+Compositeur " " --|> " " Contributeur
+
+abstract class Personne {
+  login : varchar {key}
+  mot_de_passe : varchar {not null}
+  prenom : varchar {not null}
+  nom : varchar {not null}
+  adresse : varchar 
+  mail : varchar
+}
+
+class Adherent {
+  code_adhérent: varchar {key}
+  date_naissance : date
+  num_tel : varchar
+  date_debut : date {not null}
+  date_fin : date 
+  blacklist : boolean
+}
+
+class Membre_biblio {
+}
+
+Personne  <|--  Adherent
+Personne  <|--  Membre_biblio
+
+class Pret {
+   date_debut : date {not null}
+   date_reservation : date {not null}
+}
+
+class Retard {
+   date_retard : date {not null}
+   date_prochain_emprunt()
+}
+
+class Perte_Degradation {
+   date_rembourser : date
+}
+
+
+Pret <|-- Retard
+Pret <|-- Perte_Degradation
+Exemplaire "*" -- "*" Adherent
+(Adherent,Exemplaire) .. Pret
+@enduml
